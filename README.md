@@ -1,88 +1,54 @@
-# Backend API — Morenok.backend.io v0.0.1
+# Morenok.backend.io
 
-REST API developed in .NET 8 (LTS) following a lightweight Clean Architecture structure, with clear separation of responsibilities to keep the code maintainable, scalable, and decoupled from the infrastructure.
+A multi-tenant SaaS portfolio backend built with **.NET 8** and **Clean Architecture**.
+
+Each registered user gets their own portfolio namespace (via a unique `portfolioSlug`), enabling multiple independent portfolios to be served from a single API instance.
+
+---
+
+## Features
+
+- JWT-based authentication
+- Project CRUD with Cloudinary media uploads
+- Public portfolio endpoint by portfolio slug
+- Technologies catalog
+- Global error handling (ProblemDetails / RFC 7807)
+- Rate limiting on public endpoints
 
 ---
 
 ## Project Structure
 
+```
 Morenok.backend.io/
-
-- Backend.sln
-- Backend.Api            → HTTP Layer (Controllers, configuration, Swagger)
-- Backend.Application    → Use cases and contracts
-- Backend.Domain         → Entities and business rules
-- Backend.Infrastructure → Persistence and technical implementations
-- README.md
-
----
-
-## Architecture
-
-Backend.Domain
-
-- Entities
-- Value Objects
-- Rules and invariants
-- Does not depend on any other project
-
-Backend.Application
-
-- Use cases (Commands / Queries)
-- Interfaces (repositories, services)
-- Depends only on Domain
-
-Backend.Infrastructure
-
-- Persistence implementation (EF Core + PostgreSQL)
-- Concrete repositories
-- Depends on Application and Domain
-
-Backend.Api
-
-- HTTP Endpoints
-- DTOs
-- Dependency configuration
-- Depends on Application and Infrastructure
-
----
-
-## Dependencies
-
-Application → Domain  
-Infrastructure → Application + Domain  
-Api → Application + Infrastructure  
-
-Domain has no dependencies.
-
----
-
-## Requirements
-
-- .NET SDK 8.x
-- PostgreSQL (Render)
-
----
-
-## Initial Objective
-
-Build a REST API to manage dynamic content (e.g., projects for a landing page) with:
-
-- PostgreSQL persistence
-- EF Core
-- Clean Architecture
-- Ready for deployment on Render
+├── Backend.Api            → HTTP layer (endpoints, middleware, configuration)
+├── Backend.Application    → Use cases, interfaces, DTOs
+├── Backend.Domain         → Entities, enums, base classes
+├── Backend.Infrastructure → EF Core, PostgreSQL, Cloudinary, JWT
+└── Docs/
+    ├── SETUP.md           → Local development setup guide
+    ├── API.md             → HTTP API reference
+    └── CHANGELOG.md       → Version history
+```
 
 ---
 
 ## Documentation
 
-- [Setup Guide](Docs/SETUP.md)  
-  This document provides detailed instructions for setting up the local development environment, configuring environment variables, and running the application. It should be the first point of reference for any developer new to the project.
-
-- [Changelog](Docs/CHANGELOG.md)  
-  This file maintains a chronological record of all significant changes, including new features, improvements, and bug fixes. Developers should consult this to stay informed about the project's evolution and recent updates.
+| Document | Purpose |
+|----------|---------|
+| [SETUP.md](Docs/SETUP.md) | Environment variables, migration commands, and how to run locally |
+| [API.md](Docs/API.md) | Full HTTP endpoint reference with request/response examples |
+| [CHANGELOG.md](Docs/CHANGELOG.md) | Version history following Keep a Changelog + SemVer |
 
 ---
 
-Current status: solution created, references configured, and compiling correctly.
+## Quick Start
+
+See [Docs/SETUP.md](Docs/SETUP.md) for full setup instructions.
+
+```bash
+dotnet restore
+dotnet ef database update --project Backend.Infrastructure --startup-project Backend.Api
+dotnet run --project Backend.Api
+```
