@@ -55,6 +55,40 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
+/* Leer los orígenes desde appsettings.json
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendPolicy", policy =>
+    {
+        if (builder.Environment.IsDevelopment())
+        {
+            // En desarrollo seguimos siendo flexibles
+            policy.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+        }
+        else
+        {
+            // En producción usamos la lista blanca estricta
+            policy.WithOrigins(allowedOrigins)
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+        }
+    });
+});
+*/
 
 var app = builder.Build();
 
@@ -67,6 +101,8 @@ if (app.Environment.IsDevelopment())
 // --- Middleware pipeline ---
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseHttpsRedirection();
+app.UseCors("AllowAll");
+// app.UseCors("FrontendPolicy");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
