@@ -16,7 +16,7 @@ The application is configured via `appsettings.json` or environment variable ove
 
 ### Database
 
-```
+```bash
 ConnectionStrings__DefaultConnection=Host=localhost;Database=morenok_db;Username=your_user;Password=your_password
 ```
 
@@ -24,17 +24,17 @@ ConnectionStrings__DefaultConnection=Host=localhost;Database=morenok_db;Username
 
 ### JWT Authentication
 
-```
+```bash
 Jwt__Key=<your-secret-signing-key-min-32-chars>
-Jwt__Issuer=Morenok.backend.io
-Jwt__Audience=Morenok.frontend.io
+Jwt__Issuer=Api.backend.io
+Jwt__Audience=Api.frontend.io
 ```
 
 > `Jwt__Key` must be a strong secret (32+ characters). Do **not** commit real keys to version control.
 
 ### Cloudinary (Media Uploads)
 
-```
+```bash
 Cloudinary__CloudName=your_cloud_name
 Cloudinary__ApiKey=your_api_key
 Cloudinary__ApiSecret=your_api_secret
@@ -66,6 +66,7 @@ dotnet ef database update --project Backend.Infrastructure --startup-project Bac
 ```
 
 > Requires `dotnet-ef` CLI tool. Install it if needed:
+>
 > ```bash
 > dotnet tool install --global dotnet-ef
 > ```
@@ -77,6 +78,7 @@ dotnet run --project Backend.Api
 ```
 
 The API will be available at:
+
 - HTTP: `http://localhost:5000`
 - Swagger UI: `http://localhost:5000/swagger` *(Development only)*
 
