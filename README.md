@@ -19,7 +19,7 @@ Each registered user gets their own portfolio namespace (via a unique `portfolio
 
 ## Project Structure
 
-```
+```bash
 Morenok.backend.io/
 ├── Backend.Api            → HTTP layer (endpoints, middleware, configuration)
 ├── Backend.Application    → Use cases, interfaces, DTOs
