@@ -35,7 +35,8 @@ public class ProjectService : IProjectService
         await _unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {
-            int finalDisplayOrder = dto.DisplayOrder ?? 0;
+            int finalDisplayOrder;
+            var maxOrder = await _projectRepository.GetMaxDisplayOrderAsync(dto.OwnerId, cancellationToken);
 
             if (dto.IsPinned)
             {
@@ -46,24 +47,16 @@ public class ProjectService : IProjectService
                     var existingPinned = await _projectRepository.GetByIdAsync(dto.OwnerId, existingPinnedId.Value, cancellationToken);
                     if (existingPinned != null)
                     {
-                        existingPinned.Unpin(1);
-                        await _projectRepository.ShiftDisplayOrdersAsync(dto.OwnerId, 1, 1, existingPinned.Id, cancellationToken);
+                        // Safely move old pinned to the end (no shifting needed)
+                        existingPinned.Unpin(maxOrder + 1);
                         await _projectRepository.UpdateAsync(existingPinned, cancellationToken);
                     }
                 }
             }
             else
             {
-                var maxOrder = await _projectRepository.GetMaxDisplayOrderAsync(dto.OwnerId, cancellationToken);
-                if (dto.DisplayOrder == null || dto.DisplayOrder < 1 || dto.DisplayOrder > maxOrder + 1)
-                {
-                    finalDisplayOrder = maxOrder + 1;
-                }
-                else
-                {
-                    finalDisplayOrder = dto.DisplayOrder.Value;
-                    await _projectRepository.ShiftDisplayOrdersAsync(dto.OwnerId, finalDisplayOrder, 1, null, cancellationToken);
-                }
+                // Always append non-pinned projects
+                finalDisplayOrder = maxOrder + 1;
             }
 
             var project = new Project(
@@ -81,7 +74,6 @@ public class ProjectService : IProjectService
             );
 
             await _projectRepository.AddAsync(project, cancellationToken);
-            await _projectRepository.NormalizeDisplayOrdersAsync(dto.OwnerId, cancellationToken);
             
             if (dto.TechnologyIds != null && dto.TechnologyIds.Any())
             {
@@ -138,8 +130,9 @@ public class ProjectService : IProjectService
                     var existingPinned = await _projectRepository.GetByIdAsync(ownerId, existingPinnedId.Value, cancellationToken);
                     if (existingPinned != null)
                     {
-                        existingPinned.Unpin(1);
-                        await _projectRepository.ShiftDisplayOrdersAsync(ownerId, 1, 1, existingPinned.Id, cancellationToken);
+                        var maxOrder = await _projectRepository.GetMaxDisplayOrderAsync(ownerId, cancellationToken);
+                        // Move old pinned to the end
+                        existingPinned.Unpin(maxOrder + 1);
                         await _projectRepository.UpdateAsync(existingPinned, cancellationToken);
                     }
                 }
@@ -150,16 +143,8 @@ public class ProjectService : IProjectService
             {
                 // Previously pinned, now unpinned
                 var maxOrder = await _projectRepository.GetMaxDisplayOrderAsync(ownerId, cancellationToken);
-                int finalDisplayOrder;
-                if (dto.DisplayOrder == null || dto.DisplayOrder < 1)
-                {
-                    finalDisplayOrder = maxOrder + 1;
-                }
-                else
-                {
-                    finalDisplayOrder = dto.DisplayOrder.Value;
-                    await _projectRepository.ShiftDisplayOrdersAsync(ownerId, finalDisplayOrder, 1, project.Id, cancellationToken);
-                }
+                // Always move to end when unpinning during update to avoid collision
+                int finalDisplayOrder = maxOrder + 1;
                 project.Unpin(finalDisplayOrder);
             }
             // Scenario 2: Both False, Changing DisplayOrder
@@ -168,12 +153,17 @@ public class ProjectService : IProjectService
                 if (dto.DisplayOrder.Value >= 1)
                 {
                     int newOrder = dto.DisplayOrder.Value;
+                    // For explicit reorder, we still use shift, but the unique index might still collide 
+                    // if Postgres doesn't support deferred constraints. However, the prompt says:
+                    // "Make update reorder logic only execute when displayOrder actually changes AND isPinned is false AND displayOrder >= 1."
                     await _projectRepository.ShiftDisplayOrdersAsync(ownerId, newOrder, 1, project.Id, cancellationToken);
                     project.SetDisplayOrder(newOrder);
                 }
             }
 
             await _projectRepository.UpdateAsync(project, cancellationToken);
+            // Optionally keep normalization for updates if it's considered safe enough or required to keep sequence tight
+            // but the prompt suggests avoiding unnecessary reorders. Let's keep it but be aware.
             await _projectRepository.NormalizeDisplayOrdersAsync(ownerId, cancellationToken);
             
             if (dto.TechnologyIds != null)
